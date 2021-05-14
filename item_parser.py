@@ -13,6 +13,14 @@ class ItemType(IntEnum):
     CLOTHING_SHOES = 105
     CLOTHING_ACC = 106
     CLOTHING_PET = 107
+    WEAPON_MELEE = 200
+    WEAPON_GUN = 201
+    WEAPON_HEAVY = 202
+    WEAPON_SNIPE = 203
+    WEAPON_DEPLOY = 204
+    WEAPON_THROWING = 205
+    WEAPON_SPECIAL = 206
+    SKILL = 3
 
 
 class ItemGender(IntEnum):
@@ -62,29 +70,59 @@ def calculate_tab_info(item):
         return (3, 8)
     elif type == ItemType.CLOTHING_PET:
         return (3, 9)
+    elif type == ItemType.WEAPON_MELEE:
+        return (2, 1)
+    elif type == ItemType.WEAPON_GUN:
+        return (2, 3)
+    elif type == ItemType.WEAPON_HEAVY:
+        return (2, 4)
+    elif type == ItemType.WEAPON_SNIPE:
+        return (2, 5)
+    elif type in [ItemType.WEAPON_DEPLOY, ItemType.WEAPON_SPECIAL]:
+        return (2, 6)
+    elif type == ItemType.WEAPON_THROWING:
+        return (2, 7)
+    elif type == ItemType.SKILL:
+        return (2, 8)
+        
 
+def parse_items(tree):
+    items = []
 
-tree = ET.parse("item.x7")
-root = tree.getroot()
+    root = tree.getroot()
+    for x7item in root:
+        if "item_key" in x7item.attrib:
+            id = x7item.attrib["item_key"]
+        elif "name" in x7item.attrib:
+            id = x7item.attrib["name"]
+        else:
+            continue
+
+        item = Item(id=id)
+
+        for part in x7item:
+            if part.tag == "base":
+                if "sex" in part.attrib:
+                    item.set_gender(ItemGender[part.attrib["sex"].upper()])
+    
+        try:
+            item.get_type()
+        except ValueError:
+            continue
+    
+        items.append(item)
+
+    return items
+
 
 items = []
 
-for x7item in root:
-    item = Item(x7item.attrib["item_key"])
-    for part in x7item:
-        if part.tag == "base":
-            if "sex" in part.attrib:
-                item.set_gender(ItemGender[part.attrib["sex"].upper()])
-
-    try:
-        item.get_type()
-    except ValueError:
-        continue
-
-    items.append(item)
+items.extend(parse_items(ET.parse("action.x7")))
+items.extend(parse_items(ET.parse("_eu_weapon.x7")))
+items.extend(parse_items(ET.parse("item.x7")))
 
 for item in items:
     tab_info = calculate_tab_info(item)
 
-    print(f"INSERT INTO shop_items (Id, RequiredGender, RequiredLicense, Colors, UniqueColors, RequiredLevel, LevelLimit, RequiredMasterLevel, IsOneTimeUse, IsDestroyable, MainTab, SubTab) VALUES ({item.get_id()}, {item.get_gender().value}, 0, 0, 0, 0, 0, 0, 0, 1, {tab_info[0]}, {tab_info[1]});")
-    print(f"INSERT INTO shop_iteminfos (ShopItemId, PriceGroupId, EffectGroupId, DiscountPercentage, IsEnabled) VALUES ({item.get_id()}, 1, 1, 0, 1);")
+    print(f"INSERT IGNORE INTO shop_items (Id, RequiredGender, RequiredLicense, Colors, UniqueColors, RequiredLevel, LevelLimit, RequiredMasterLevel, IsOneTimeUse, IsDestroyable, MainTab, SubTab) VALUES ({item.get_id()}, {item.get_gender().value}, 0, 0, 0, 0, 0, 0, 0, 1, {tab_info[0]}, {tab_info[1]});")
+    print(f"INSERT IGNORE INTO shop_iteminfos (ShopItemId, PriceGroupId, EffectGroupId, DiscountPercentage, IsEnabled) VALUES ({item.get_id()}, 1, 1, 0, 1);")
