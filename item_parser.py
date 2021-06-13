@@ -124,6 +124,7 @@ items.extend(parse_items(ET.parse("item.x7")))
 # Create required groups for foreign keys
 print(f"INSERT IGNORE INTO shop_effect_groups (Id, Name, PreviewEffect) VALUES (1, 'None', 0);")
 print(f"INSERT IGNORE INTO shop_price_groups (Id, Name, PriceType) VALUES (1, 'Free', 1);")
+print(f"INSERT IGNORE INTO shop_prices (Id, PriceGroupId, PeriodType, Period, Price, IsRefundable, Durability, IsEnabled) VALUES (1, 1, 4, 0, 0, 1, -1, 1);")
 
 for item in items:
     tab_info = calculate_tab_info(item)
