@@ -84,7 +84,7 @@ def calculate_tab_info(item):
         return (2, 7)
     elif type == ItemType.SKILL:
         return (2, 8)
-        
+
 
 def parse_items(tree):
     items = []
@@ -104,12 +104,12 @@ def parse_items(tree):
             if part.tag == "base":
                 if "sex" in part.attrib:
                     item.set_gender(ItemGender[part.attrib["sex"].upper()])
-    
+
         try:
             item.get_type()
         except ValueError:
             continue
-    
+
         items.append(item)
 
     return items
@@ -122,12 +122,14 @@ items.extend(parse_items(ET.parse("_eu_weapon.x7")))
 items.extend(parse_items(ET.parse("item.x7")))
 
 # Create required groups for foreign keys
-print(f"INSERT IGNORE INTO shop_effect_groups (Id, Name, PreviewEffect) VALUES (1, 'None', 0);")
-print(f"INSERT IGNORE INTO shop_price_groups (Id, Name, PriceType) VALUES (1, 'Free', 1);")
-print(f"INSERT IGNORE INTO shop_prices (Id, PriceGroupId, PeriodType, Period, Price, IsRefundable, Durability, IsEnabled) VALUES (1, 1, 4, 0, 0, 1, -1, 1);")
+print("INSERT IGNORE INTO shop_effect_groups (Id, Name, PreviewEffect) VALUES (1, 'None', 0);")
+# 1 = PEN, 2 = AP. By making everything 0 AP the game allows people to buy recolors
+print("INSERT IGNORE INTO shop_price_groups (Id, Name, PriceType) VALUES (1, 'Free', 2);")
+print("INSERT IGNORE INTO shop_prices (Id, PriceGroupId, PeriodType, Period, Price, IsRefundable, Durability, IsEnabled) VALUES (1, 1, 4, 0, 0, 1, -1, 1);")
 
 for item in items:
     tab_info = calculate_tab_info(item)
 
-    print(f"INSERT IGNORE INTO shop_items (Id, RequiredGender, RequiredLicense, Colors, UniqueColors, RequiredLevel, LevelLimit, RequiredMasterLevel, IsOneTimeUse, IsDestroyable, MainTab, SubTab) VALUES ({item.get_id()}, {item.get_gender().value}, 0, 0, 0, 0, 0, 0, 0, 1, {tab_info[0]}, {tab_info[1]});")
+    # We set Colors to 10 to allow 10 recolors of every item for easier modding, if this is a serious server, you want to manually get the right value for everything
+    print(f"INSERT IGNORE INTO shop_items (Id, RequiredGender, RequiredLicense, Colors, UniqueColors, RequiredLevel, LevelLimit, RequiredMasterLevel, IsOneTimeUse, IsDestroyable, MainTab, SubTab) VALUES ({item.get_id()}, {item.get_gender().value}, 10, 0, 0, 0, 0, 0, 0, 1, {tab_info[0]}, {tab_info[1]});")
     print(f"INSERT IGNORE INTO shop_iteminfos (ShopItemId, PriceGroupId, EffectGroupId, DiscountPercentage, IsEnabled) VALUES ({item.get_id()}, 1, 1, 0, 1);")
